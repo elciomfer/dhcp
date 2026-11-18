@@ -56,15 +56,15 @@ vagrant ssh dhcp -c "sudo journalctl -u kea-dhcp4-server --no-pager | grep -E 'D
 ## Estrutura
 
 ```
-Vagrantfile              # define as máquinas, a memória, as placas de rede e os MACs
-config/kea-dhcp4.conf    # configuração do Kea (as quatro VLANs do projeto)
-scripts/servidor.sh      # IP fixo, instalação, validação e início do Kea
-scripts/cliente.sh       # configura a interface da rede interna por DHCP
+vagrantfile              # define as máquinas, a memória, as placas de rede e os MACs
+settings/kea-dhcp4.conf  # configuração do Kea (as quatro VLANs do projeto)
+scripts/server.sh        # IP fixo, instalação, validação e início do Kea
+scripts/client.sh        # configura a interface da rede interna por DHCP
 ```
 
 ## Como funciona
 
-- **Placas de rede:** o Vagrant cria a placa NAT. A segunda placa é ligada à rede interna `intnet-vagrant` com um MAC fixo, definido no `Vagrantfile`.
+- **Placas de rede:** o Vagrant cria a placa NAT. A segunda placa é ligada à rede interna `intnet-vagrant` com um MAC fixo, definido no `vagrantfile`.
 - **Interface certa:** os scripts encontram a placa da rede interna pelo MAC, sem depender do nome da interface (`enp0s8`, `eth1` etc.). No servidor, esse nome substitui o marcador `__IFACE__` da configuração do Kea.
 - **Reserva:** o MAC fixo do client02 (`08:00:27:a0:b0:12`) é o mesmo da reserva no `kea-dhcp4.conf`.
 - **VLANs sem switch:** sem switch Layer 3, a VLAN 10 é simulada pelo parâmetro `interface` do Kea. As VLANs 20, 30 e 40 ficam configuradas para operar via DHCP Relay.
@@ -78,6 +78,6 @@ scripts/cliente.sh       # configura a interface da rede interna por DHCP
 ## Problemas comuns
 
 - **"VirtualBox version not supported":** a versão do Vagrant não reconhece a versão instalada do VirtualBox. Atualize o Vagrant.
-- **`$'\r': command not found` ao provisionar:** os scripts foram salvos com quebras de linha do Windows. O `.gitattributes` evita isso em clones do Git; se os arquivos foram editados manualmente, converta para LF no editor.
+- **`$'\r': command not found` ao provisionar:** os scripts foram salvos com quebras de linha do Windows (CRLF). Converta os arquivos para LF no editor.
 - **A VM não liga, com erro de VT-x/AMD-V:** ative a virtualização na BIOS/UEFI ou desative o Hyper-V do Windows.
 - **Cliente sem IP:** confira se o servidor está ativo (`vagrant ssh dhcp -c "systemctl status kea-dhcp4-server"`) e reprovisione o cliente com `vagrant provision client01`.
