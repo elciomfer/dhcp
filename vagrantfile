@@ -1,0 +1,55 @@
+# -*- mode: ruby -*-
+# Laboratório do servidor Kea DHCP: 1 servidor + 2 clientes no VirtualBox.
+# Uso: vagrant up        (cria e configura tudo)
+#      vagrant destroy -f (apaga tudo)
+
+# Imagem base. Para testar com Debian 13, se a box existir:
+#   BOX=debian/trixie64 vagrant up
+BOX = ENV.fetch("BOX", "debian/bookworm64")
+
+# Nome da rede interna do VirtualBox. É diferente da "intnet" do laboratório
+# manual para as duas montagens não se misturarem se estiverem ligadas juntas.
+REDE_INTERNA = "intnet-vagrant"
+
+# A ordem importa: o servidor sobe primeiro.
+# Os MACs são fixos para a reserva do client02 funcionar (ver config/kea-dhcp4.conf).
+MAQUINAS = {
+  "dhcp"     => { mac: "080027A0B001", memoria: 1024, script: "scripts/servidor.sh" },
+  "client01" => { mac: "080027A0B011", memoria: 512,  script: "scripts/cliente.sh" },
+  "client02" => { mac: "080027A0B012", memoria: 512,  script: "scripts/cliente.sh" },
+}
+
+Vagrant.configure("2") do |config|
+  config.vm.box = BOX
+
+  # As boxes do Debian não trazem o Guest Additions; a pasta compartilhada
+  # não é necessária, porque os arquivos são enviados pelo provisionamento.
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  MAQUINAS.each do |nome, opt|
+    config.vm.define nome do |m|
+      m.vm.hostname = nome
+
+      m.vm.provider "virtualbox" do |vb|
+        vb.name   = "kea-#{nome}"
+        vb.memory = opt[:memoria]
+        vb.cpus   = 1
+        # Placa 1: NAT (criada pelo próprio Vagrant, usada para SSH e internet).
+        # Placa 2: rede interna, onde o DHCP atua.
+        vb.customize ["modifyvm", :id,
+                      "--nic2", "intnet",
+                      "--intnet2", REDE_INTERNA,
+                      "--macaddress2", opt[:mac],
+                      "--cableconnected2", "on"]
+      end
+
+      if nome == "dhcp"
+        m.vm.provision "file", source: "config/kea-dhcp4.conf",
+                               destination: "/tmp/kea-dhcp4.conf"
+      end
+
+      # O MAC é passado ao script para ele achar a placa da rede interna.
+      m.vm.provision "shell", path: opt[:script], args: [opt[:mac]]
+    end
+  end
+end
