@@ -12,11 +12,11 @@ BOX = ENV.fetch("BOX", "debian/bookworm64")
 REDE_INTERNA = "intnet-vagrant"
 
 # A ordem importa: o servidor sobe primeiro.
-# Os MACs são fixos para a reserva do client02 funcionar (ver config/kea-dhcp4.conf).
+# Os MACs são fixos para a reserva do client02 funcionar (ver settings/kea-dhcp4.conf).
 MAQUINAS = {
-  "dhcp"     => { mac: "080027A0B001", memoria: 1024, script: "scripts/servidor.sh" },
-  "client01" => { mac: "080027A0B011", memoria: 512,  script: "scripts/cliente.sh" },
-  "client02" => { mac: "080027A0B012", memoria: 512,  script: "scripts/cliente.sh" },
+  "dhcp"     => { mac: "080027A0B001", memoria: 1024, script: "scripts/server.sh" },
+  "client01" => { mac: "080027A0B011", memoria: 512,  script: "scripts/client.sh" },
+  "client02" => { mac: "080027A0B012", memoria: 512,  script: "scripts/client.sh" },
 }
 
 Vagrant.configure("2") do |config|
@@ -44,7 +44,7 @@ Vagrant.configure("2") do |config|
       end
 
       if nome == "dhcp"
-        m.vm.provision "file", source: "config/kea-dhcp4.conf",
+        m.vm.provision "file", source: "settings/kea-dhcp4.conf",
                                destination: "/tmp/kea-dhcp4.conf"
       end
 
